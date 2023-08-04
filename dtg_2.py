@@ -1,40 +1,51 @@
 import csv
 import pandas as pd
-import numpy as np
-import seaborn as sns
-import matplotlib.pyplot as plt
 from datetime import datetime
 
-def max(dt, dtnum, last):
+def max(dt, dtnum, last): #최댓값 함수
     max = 0
     for j in range(last+1):
         if dt[j][dtnum] > max:
             max = dt[j][dtnum]
     return max
 
-def avg(dt, dtnum, last):
+def min(dt, dtnum, last):
+    min = dt[0][dtnum]
+    for j in range(last+1):
+        if dt[j][dtnum]<min:
+            min = dt[j][dtnum]
+    return min
+
+def avg(dt, dtnum, last): #평균 함수
     sum = 0
     for j in range(last+1):
         sum += dt[j][dtnum]
     return round(sum/(last+1),1)
 
-def dtg_status(dt, last):
+def dtg_status(dt, last): #dtg상태 함수, 좌표상태이상(11) or RPM센서이상(13)
     count = 0
-    for j in range(last):
-        if dt[j][11] == 11 and dt[j+1][11] == 11:
+    for i in range(last):
+        if dt[i][11] == 11 and dt[i+1][11] == 11:
             count += 1
-            if count>=900:
+            if count>=450:
                 return 11
         else:
             count = 0
+            
+    for j in range(last):
+        if dt[j][7] == 0 and dt[j+1][7] == 0:
+            count += 1
+            if count >= 300:
+                return 13    
+        else:
+            count = 0
+
     return 0
 
-plt.rc("font", family="Malgun Gothic")
-plt.rc("axes", unicode_minus=False)
+df = pd.read_csv("D:/dtg_02.CSV", encoding='cp949') # 지정한 경로에서 DTG파일 가져오기
 
-import koreanize_matplotlib
-
-df = pd.read_csv("C:/DTG_01.txt") # 지정한 경로에서 DTG파일 가져오기
+df.drop(df[df["누적연료사용량"]==0].index, inplace=True) # 누적연료사용량이 0인 에러 데이터 삭제
+df.drop(df[(df["기기상태"]==0)&(df["차량위치X"]==0)].index, inplace=True) # 기기상태가 0임에도 차량위치가 0인 에러 데이터 삭제
 
 ts = df["트립시작일"].unique() #고유한 트립시작일 값을 넣은 trip_start 배열 선언
 tlen = len(ts) # 고유한 트립시작일 값의 개수
@@ -66,12 +77,9 @@ for i in range(tlen):
  
     tt[i][9] = avg(dt,7,last) #평균 RPM
 
-    tt[i][10] = dt[0][14] #최소전압 계산
-    for j in range(last+1):
-        if dt[j][14]<tt[i][10]:
-            tt[i][10] = dt[j][14]
-
-    tt[i][11] = max(dt,14,last) #최대전압 계산
+    tt[i][10] = min(dt,14,last) #최소전압
+    
+    tt[i][11] = max(dt,14,last) #최대전압
 
     tt[i][12] = 0 #과속시간, (과속한 후의 정보발생일 - 과속한 정보발생일), 초단위
     for j in range(last+1):
@@ -81,8 +89,7 @@ for i in range(tlen):
             
     tt[i][13] = dt[last][4] #해당 트립에서의 최종 누적주행거리값
 
-
-col_name = ['출발일시', '도착일시', '운전자명', 'DTG 상태', '운행시간', '운행거리', '최고속도', '평균속도', '최고RPM', '평균RPM', '최소전압', '최대전압','과속시간', '누적주행거리']
-#tt = pd.DataFrame(tt, columns = col_name)
-#tt.to_csv("dtg_01")
+col_name = ['departure_time', 'arrival_time', 'driver_code', 'dtg_status', 'driving_time', 'driving_distance', 'speed_max', 'speed_avg', 'rpm_max', 'rpm_avg', 'volt_min', 'volt_max','overspeed_time', 'accumulated_distance']
+tt = pd.DataFrame(tt, columns = col_name)
+#tt.to_csv("dtg_01.csv",index=False)
 
