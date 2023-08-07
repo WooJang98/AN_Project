@@ -42,7 +42,7 @@ def dtg_status(dt, last): #dtg상태 함수, 좌표상태이상(11) or RPM센서
 
     return 0
 
-df = pd.read_csv("D:/dtg_02.CSV", encoding='cp949') # 지정한 경로에서 DTG파일 가져오기
+df = pd.read_csv("D:/dtg_01.CSV", encoding='cp949') # 지정한 경로에서 DTG파일 가져오기
 
 df.drop(df[df["누적연료사용량"]==0].index, inplace=True) # 누적연료사용량이 0인 에러 데이터 삭제
 df.drop(df[(df["기기상태"]==0)&(df["차량위치X"]==0)].index, inplace=True) # 기기상태가 0임에도 차량위치가 0인 에러 데이터 삭제
@@ -56,16 +56,17 @@ for i in range(tlen):
     dt=dt.values #일회용 테이블의 2차원 배열화
     last = len(dt)-1 #위에서 만들어진 2차원 배열의 마지막 인덱스
     
-    tt[i][0] = dt[0][2] #출발일시, 트립시작일과 동일한 값 적
+    tt[i][0] = "'" + dt[0][2] + "'" #출발일시, 트립시작일과 동일한 값 적
 
-    tt[i][1] = dt[last][3] #도착일시, 같은 트립시작일 중 가장 마지막의 정보 발생일
+    tt[i][1] = "'" + dt[last][3] + "'" #도착일시, 같은 트립시작일 중 가장 마지막의 정보 발생일
 
     tt[i][2] = dt[0][22] #운전자명, 운전자 코드 값
 
     tt[i][3] = dtg_status(dt, last) #DTG상태, 기기상태값
 
-    tt[i][4] = int((datetime.strptime(dt[last][3],"%Y-%m-%d %H:%M:%S") - datetime.strptime(dt[0][2],"%Y-%m-%d %H:%M:%S")).total_seconds())
-    #운행시간, (도착일시-트립시작일) 계산, 초단위로 변환 후 int 형으로 변환
+    total_seconds = int((datetime.strptime(dt[last][3],"%Y-%m-%d %H:%M:%S") - datetime.strptime(dt[0][2],"%Y-%m-%d %H:%M:%S")).total_seconds())
+    tt[i][4] = "'" + str(int(total_seconds/3600))+":" + str(int((total_seconds%3600)/60)) + ":" + str(total_seconds%60)+"'"
+    #운행시간, (도착일시-트립시작일) 계산, 초단위로 변환 후 int 형으로 변환, hh:mm:ss 형식의 문자열로 변환
 
     tt[i][5] = dt[last][4]-dt[0][4] #운행거리, (도착일시 시점의 누적주행거리 - 트립시작일 시점의 누적주행거리)
 
